@@ -1,0 +1,5 @@
+# Ignore all hidden directories
+.*/
+
+# Ignore CMake default build directory
+build/
