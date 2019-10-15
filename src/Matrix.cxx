@@ -7,7 +7,7 @@
 #include <cctype>
 #include <sstream>
 
-#define DOUBLE_EPSILON 1e-9
+#define DOUBLE_EPSILON 1e-7
 
 namespace apr {
 
@@ -42,7 +42,7 @@ namespace apr {
 
     Matrix::Matrix(const std::string& fileName) {
         std::ifstream inputFileStream(fileName);
-        if (!inputFileStream.bad())
+        if (!inputFileStream.good())
             throw std::runtime_error(g_FileStreamBadMessage);
         inputFileStream >> *this;
     }
