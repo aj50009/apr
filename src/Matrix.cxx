@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <fstream>
 #include <cmath>
+#include <limits>
+#include <algorithm>
 #include <cctype>
 #include <sstream>
 
@@ -15,6 +17,10 @@ namespace apr {
     static const std::string g_WidthZeroMessage = "Width cannot be zero";
     static const std::string g_FileStreamBadMessage = "File stream could not be opened";
     static const std::string g_MatricesIncompatibleMessage = "Matrices are incompatible";
+    static const std::string g_MatrixSquareMessage = "Matrix is not a square matrix";
+    static const std::string g_FreeVectorMalformedMessage = "Free vector is malformed";
+    static const std::string g_PivotZeroMessage = "Pivot element cannot be zero";
+    static const std::string g_IndexRangeMessage = "Index is out of range";
 
     Matrix::Matrix(std::size_t dimension) {
         if (dimension == 0)
@@ -105,6 +111,141 @@ namespace apr {
             if (std::fabs(m_Elements[k] - matrix.m_Elements[k]) > DOUBLE_EPSILON)
                 return false;
         return true;
+    }
+
+    Matrix Matrix::ForwardSupstitution(const Matrix& freeVector) const {
+        if (m_Width * m_Width != m_Elements.size())
+            throw std::logic_error(g_MatrixSquareMessage);
+        if (((freeVector.m_Width != 1) && (freeVector.m_Width != m_Width)) || (freeVector.m_Elements.size() != m_Width))
+            throw std::logic_error(g_FreeVectorMalformedMessage);
+        Matrix solution = freeVector;
+        solution.m_Width = 1;
+        for (std::size_t i = 0; i < m_Width - 1; ++i)
+            for (std::size_t j = i + 1; j < m_Width; ++j)
+                solution.m_Elements[j] -= m_Elements[m_Width * j + i] * solution.m_Elements[i];
+        return solution;
+    }
+
+    Matrix Matrix::BackSupstitution(const Matrix& freeVector) const {
+        if (m_Width * m_Width != m_Elements.size())
+            throw std::logic_error(g_MatrixSquareMessage);
+        if (((freeVector.m_Width != 1) && (freeVector.m_Width != m_Width)) || (freeVector.m_Elements.size() != m_Width))
+            throw std::logic_error(g_FreeVectorMalformedMessage);
+        Matrix solution = freeVector;
+        solution.m_Width = 1;
+        for (std::size_t i = m_Width - 1; i != std::numeric_limits<std::size_t>::max(); --i) {
+            if (std::fabs(m_Elements[m_Width * i + i]) <= DOUBLE_EPSILON)
+                throw std::runtime_error(g_PivotZeroMessage);
+            solution.m_Elements[i] /= m_Elements[m_Width * i + i];
+            for (std::size_t j = 0; j < i; ++j)
+                solution.m_Elements[j] -= m_Elements[m_Width * j + i] * solution.m_Elements[i];
+        }
+        return solution;
+    }
+
+    Matrix Matrix::DecompositionLU() const {
+        if (m_Width * m_Width != m_Elements.size())
+            throw std::logic_error(g_MatrixSquareMessage);
+        Matrix decomposition = *this;
+        for (std::size_t i = 0; i < m_Width - 1; ++i)
+            for (std::size_t j = i + 1; j < m_Width; ++j) {
+                if (std::fabs(decomposition.m_Elements[m_Width * i + i]) <= DOUBLE_EPSILON)
+                    throw std::runtime_error(g_PivotZeroMessage);
+                decomposition.m_Elements[m_Width * j + i] /= decomposition.m_Elements[m_Width * i + i];
+                for (std::size_t k = i + 1; k < m_Width; ++k)
+                    decomposition.m_Elements[m_Width * j + k] -= decomposition.m_Elements[m_Width * j + i] * decomposition.m_Elements[m_Width * i + k];
+            }
+        return decomposition;
+    }
+
+    Matrix Matrix::DecompositionLUP() const {
+        std::size_t permutationsCount;
+        return DecompositionLUP(permutationsCount);
+    }
+
+    Matrix Matrix::DecompositionLUP(std::size_t& permutationsCount) const {
+        Matrix permutationsMatrix;
+        Matrix decomposition = this->DecompositionLUP(permutationsCount, permutationsMatrix);
+        return permutationsMatrix * decomposition;
+    }
+
+    Matrix Matrix::DecompositionLUP(std::size_t& permutationsCount, Matrix& permutationsMatrix) const {
+        if (m_Width * m_Width != m_Elements.size())
+            throw std::logic_error(g_MatrixSquareMessage);
+        Matrix decomposition = *this;
+        std::vector<std::size_t> indices;
+        indices.resize(m_Width);
+        for (std::size_t i = 0; i < m_Width; ++i)
+            indices[i] = i;
+        std::size_t pivot, counter = 0;
+        for (std::size_t i = 0; i < m_Width - 1; ++i) {
+            pivot = i;
+            for (std::size_t j = i + 1; j < m_Width; ++j)
+                if (std::fabs(decomposition.m_Elements[m_Width * indices[j] + i]) > std::fabs(decomposition.m_Elements[m_Width * indices[pivot] + i]))
+                    pivot = j;
+            if (i != pivot) {
+                std::swap(indices[i], indices[pivot]);
+                counter++;
+            }
+            for (std::size_t j = i + 1; j < m_Width; ++j) {
+                if (std::fabs(decomposition.m_Elements[m_Width * indices[i] + i]) <= DOUBLE_EPSILON)
+                    throw std::runtime_error(g_PivotZeroMessage);
+                decomposition.m_Elements[m_Width * indices[j] + i] /= decomposition.m_Elements[m_Width * indices[i] + i];
+                for (std::size_t k = i + 1; k < m_Width; ++k)
+                    decomposition.m_Elements[m_Width * indices[j] + k] -= decomposition.m_Elements[m_Width * indices[j] + i] * decomposition.m_Elements[m_Width * indices[i] + k];
+            }
+        }
+        permutationsCount = counter;
+        permutationsMatrix = Matrix(m_Width, m_Width);
+        for (std::size_t i = 0; i < m_Width; ++i)
+            permutationsMatrix.m_Elements[m_Width * i + indices[i]] = 1.0;
+        return decomposition;
+    }
+
+    Matrix Matrix::Inverse() const {
+        if (m_Width * m_Width != m_Elements.size())
+            throw std::logic_error(g_MatrixSquareMessage);
+        std::size_t permutationsCount;
+        Matrix permutationsMatrix;
+        Matrix decomposition = this->DecompositionLUP(permutationsCount, permutationsMatrix);
+        decomposition = permutationsMatrix * decomposition;
+        Matrix result(m_Width, m_Width);
+        for (std::size_t i = 0; i < m_Width; ++i) {
+            Matrix freeVector(m_Width, 1);
+            freeVector.m_Elements[i] = 1.0;
+            Matrix solutionVector = decomposition.BackSupstitution(decomposition.ForwardSupstitution(freeVector));
+            std::copy_n(solutionVector.m_Elements.data(), m_Width, result.m_Elements.data() + m_Width * i);
+        }
+        return ~result * permutationsMatrix;
+    }
+
+    double Matrix::Determinant() const {
+        if (m_Width * m_Width != m_Elements.size())
+            throw std::logic_error(g_MatrixSquareMessage);
+        std::size_t permutationsCount;
+        Matrix decomposition = this->DecompositionLUP(permutationsCount);
+        double determinant = (permutationsCount & 1) ? -1.0 : 1.0;
+        for (std::size_t i = 0; i < m_Width; ++i)
+            determinant *= decomposition.m_Elements[m_Width * i + i];
+        return determinant;
+    }
+
+    Matrix Matrix::GetRow(std::size_t index) const {
+        if (index >= m_Elements.size() / m_Width)
+            throw std::out_of_range(g_IndexRangeMessage);
+        Matrix row(1, m_Width);
+        std::copy_n(m_Elements.data() + m_Width * index, m_Width, row.m_Elements.data());
+        return row;
+    }
+
+    Matrix Matrix::GetColumn(std::size_t index) const {
+        if (index >= m_Width)
+            throw std::out_of_range(g_IndexRangeMessage);
+        std::size_t height = m_Elements.size() / m_Width;
+        Matrix column(height, 1);
+        for (std::size_t i = 0; i < height; ++i)
+            column.m_Elements[i] = m_Elements[m_Width * i + index];
+        return column;
     }
 
     Matrix operator/(double scalar, const Matrix& matrix) {

@@ -166,6 +166,73 @@ namespace apr {
          */
         inline bool operator!=(const Matrix& matrix) const { return !(*this == matrix); }
 
+        /**
+         * @brief Compute solution using forward supstitution.
+         * @param freeVector Free vector (matrix).
+         * @return Matrix Solution vector (matrix).
+         */
+        Matrix ForwardSupstitution(const Matrix& freeVector) const;
+
+        /**
+         * @brief Compute solution using back supstitution.
+         * @param freeVector Free vector (matrix).
+         * @return Matrix Solution vector (matrix).
+         */
+        Matrix BackSupstitution(const Matrix& freeVector) const;
+
+        /**
+         * @brief Compute a combined LU matrix using LU decomposition.
+         * @return Matrix LU matrix.
+         */
+        Matrix DecompositionLU() const;
+
+        /**
+         * @brief Compute a combined LU matrix using LUP decomposition.
+         * @return Matrix LU matrix.
+         */
+        Matrix DecompositionLUP() const;
+
+        /**
+         * @brief Compute a combined LU matrix using LUP decomposition.
+         * @param permutationsCount Total number of permutations.
+         * @return Matrix LU matrix.
+         */
+        Matrix DecompositionLUP(std::size_t& permutationsCount) const;
+
+        /**
+         * @brief Compute a combined LU matrix using LUP decomposition.
+         * @param permutationsCount Total number of permutations.
+         * @param permutationsMatrix Permutations matrix.
+         * @return Matrix LU matrix (permutations matrix is not premultiplied).
+         */
+        Matrix DecompositionLUP(std::size_t& permutationsCount, Matrix& permutationsMatrix) const;
+
+        /**
+         * @brief Compute inverse using LUP decomposition.
+         * @return Matrix Matrix inverse.
+         */
+        Matrix Inverse() const;
+
+        /**
+         * @brief Compute determinant using LUP decomposition.
+         * @return double Matrix determinant.
+         */
+        double Determinant() const;
+
+        /**
+         * @brief Get matrix row of specified index.
+         * @param index Specified index.
+         * @return Matrix Row vector (matrix).
+         */
+        Matrix GetRow(std::size_t index) const;
+
+        /**
+         * @brief Get matrix column of specified index.
+         * @param index Specified index.
+         * @return Matrix Column vector (matrix).
+         */
+        Matrix GetColumn(std::size_t index) const;
+
     private:
 
         /* These functions can touch my privates ;) */
