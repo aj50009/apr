@@ -4,3 +4,11 @@ add_executable(
     "${CMAKE_CURRENT_SOURCE_DIR}/Matrix.cxx"
     "${CMAKE_CURRENT_SOURCE_DIR}/Lab1.cxx"
 )
+
+# Add lab 2 executable target
+add_executable(
+    lab2
+    "${CMAKE_CURRENT_SOURCE_DIR}/Matrix.cxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SearchAlgorithms.cxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Lab2.cxx"
+)
