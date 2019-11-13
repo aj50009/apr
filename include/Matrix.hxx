@@ -2,6 +2,7 @@
 #define __APR_MATRIX_HXX__
 
 #include <cstddef>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <istream>
@@ -218,6 +219,28 @@ namespace apr {
          * @return double Matrix determinant.
          */
         double Determinant() const;
+
+        /**
+         * @brief Compute vector length (Euclidean norm).
+         * @note Matrix must be a vector.
+         * @return double Vector length (Euclidean norm).
+         */
+        inline double Length() const {
+            return std::sqrt(LengthSquared());
+        }
+
+        /**
+         * @brief Compute squared vector length (squared Euclidean norm). This is a bit faster than computing an actual vector length (Euclidean norm).
+         * @note Matrix must be a vector.
+         * @return double Squared vector length (squared Euclidean norm).
+         */
+        double LengthSquared() const;
+
+        /**
+         * @brief Normalize vector by its length (Euclidean norm).
+         * @note Matrix must be a vector.
+         */
+        void Normalize();
 
         /**
          * @brief Get matrix row of specified index.

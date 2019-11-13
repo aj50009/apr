@@ -21,6 +21,8 @@ namespace apr {
     static const std::string g_FreeVectorMalformedMessage = "Free vector is malformed";
     static const std::string g_PivotZeroMessage = "Pivot element cannot be zero";
     static const std::string g_IndexRangeMessage = "Index is out of range";
+    static const std::string g_MatrixNotVectorMessage = "Matrix is not a vector";
+    static const std::string g_NullVectorMessage = "Vector is a null-vector";
 
     Matrix::Matrix(std::size_t dimension) {
         if (dimension == 0)
@@ -228,6 +230,23 @@ namespace apr {
         for (std::size_t i = 0; i < m_Width; ++i)
             determinant *= decomposition.m_Elements[m_Width * i + i];
         return determinant;
+    }
+
+    double Matrix::LengthSquared() const {
+        if (m_Width != 1 && m_Width != m_Elements.size())
+            throw std::logic_error(g_MatrixNotVectorMessage);
+        double norm2 = 0.0;
+        for (double x : m_Elements)
+            norm2 += x * x;
+        return norm2;
+    }
+
+    void Matrix::Normalize() {
+        double norm = Length();
+        if (std::fabs(norm) < DOUBLE_EPSILON)
+            throw std::logic_error(g_NullVectorMessage);
+        for (double& x : m_Elements)
+            x /= norm;
     }
 
     Matrix Matrix::GetRow(std::size_t index) const {
