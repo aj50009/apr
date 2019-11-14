@@ -260,6 +260,7 @@ namespace apr {
 
         /* This class and these functions can touch my privates ;) */
         friend class SearchAlgorithms;
+        friend class GradientAlgorithms;
         friend std::istream& operator>>(std::istream& inputStream, Matrix& matrix);
         friend std::ostream& operator<<(std::ostream& outputStream, const Matrix& matrix);
         friend Matrix operator/(double scalar, const Matrix& matrix);
