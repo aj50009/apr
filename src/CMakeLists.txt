@@ -21,3 +21,9 @@ add_executable(
     "${CMAKE_CURRENT_SOURCE_DIR}/GradientAlgorithms.cxx"
     "${CMAKE_CURRENT_SOURCE_DIR}/Lab3.cxx"
 )
+
+# Add lab 4 executable target
+add_executable(
+    lab4
+    "${CMAKE_CURRENT_SOURCE_DIR}/Lab4.cxx"
+)
