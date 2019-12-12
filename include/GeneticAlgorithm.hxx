@@ -2,6 +2,7 @@
 #define __APR_GENETIC_ALGORITHM_HXX__
 
 #include <initializer_list>
+#include <functional>
 #include <utility>
 #include <memory>
 #include <vector>
@@ -9,6 +10,7 @@
 #include <ostream>
 #include <istream>
 #include <cstdint>
+#include <cstddef>
 
 namespace apr {
 
@@ -61,6 +63,50 @@ namespace apr {
             friend std::istream& operator>>(std::istream&, const Ptr&);
             AbstractPresentation::Ptr m_Presentation;
             std::uint64_t* m_Genes;
+        };
+
+        using CrossoverFunction = std::function<std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(const AbstractUnit::Ptr&, const AbstractUnit::Ptr&)>;
+        using MutationFunction = std::function<void(const AbstractUnit::Ptr&)>;
+        class BinaryPresentation : public AbstractPresentation {
+        public:
+            using Ptr = std::shared_ptr<BinaryPresentation>;
+            static std::size_t GetMinimumNumberOfBitsPerGene(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds, std::uint8_t numberOfDecimalPlaces = 6);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t breakingPoint);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double switchChance);
+            static void SimpleMutation(const AbstractUnit::Ptr& unit);
+            static void SimpleMutation(const AbstractUnit::Ptr& unit, std::uint8_t bitIndex);
+            BinaryPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds, std::uint8_t numberOfBitsPerGene = 64);
+            virtual ~BinaryPresentation();
+            std::uint8_t GetNumberOfBitsPerGene() const;
+            void SetSinglePointCrossoverFunction();
+            void SetSegmentedCrossoverFunction();
+            void SetCustomCrossoverFunction(const CrossoverFunction& crossoverFunction);
+            void SetSimpleMutationFunction();
+            void SetCustomMutationFunction(const MutationFunction& mutationFunction);
+            virtual std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> Crossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) const override;
+            virtual void Mutate(const AbstractUnit::Ptr& unit) const override;
+        private:
+            std::uint8_t m_NumberOfBitsPerGene;
+            CrossoverFunction m_CrossoverFunction;
+            MutationFunction m_MutationFunction;
+        };
+
+        class BinaryUnit : public AbstractUnit {
+        public:
+            using Ptr = std::shared_ptr<BinaryUnit>;
+            BinaryUnit(const AbstractPresentation::Ptr& presentation);
+            virtual ~BinaryUnit();
+            std::uint64_t GetGeneBitString(std::uint8_t index) const;
+            void SetGeneBitString(std::uint8_t index, std::uint64_t bitString);
+            virtual double GetGeneReal(std::uint8_t index) const override;
+            virtual void SetGeneReal(std::uint8_t index, double real) override;
+            virtual void ClampGene(std::uint8_t index) override;
+            virtual void Clamp() override;
+        protected:
+            virtual std::string GetGeneString(std::uint8_t index) const override;
+            virtual void SetGeneString(std::uint8_t index, const std::string& str) override;
         };
     };
 

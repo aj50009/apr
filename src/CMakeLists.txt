@@ -25,5 +25,6 @@ add_executable(
 # Add lab 4 executable target
 add_executable(
     lab4
+    "${CMAKE_CURRENT_SOURCE_DIR}/GeneticAlgorithm.cxx"
     "${CMAKE_CURRENT_SOURCE_DIR}/Lab4.cxx"
 )
