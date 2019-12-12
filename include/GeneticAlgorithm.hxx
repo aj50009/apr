@@ -114,6 +114,11 @@ namespace apr {
     inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::AbstractUnit::Ptr& unit) { unit->WriteToOutputStream(outputStream); return outputStream; }
     inline std::istream& operator>>(std::istream& inputStream, GeneticAlgorithm::AbstractUnit& unit) { unit.ReadFromInputStream(inputStream); return inputStream; }
     inline std::istream& operator>>(std::istream& inputStream, const GeneticAlgorithm::AbstractUnit::Ptr& unit) { unit->ReadFromInputStream(inputStream); return inputStream; }
+    
+    inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::BinaryUnit& unit) { outputStream << static_cast<const GeneticAlgorithm::AbstractUnit&>(unit); return outputStream; }
+    inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::BinaryUnit::Ptr& unit) { outputStream << static_cast<const GeneticAlgorithm::AbstractUnit&>(*(unit.get())); return outputStream; }
+    inline std::istream& operator>>(std::istream& inputStream, GeneticAlgorithm::BinaryUnit& unit) { inputStream >> static_cast<GeneticAlgorithm::AbstractUnit&>(unit); return inputStream; }
+    inline std::istream& operator>>(std::istream& inputStream, const GeneticAlgorithm::BinaryUnit::Ptr& unit) { inputStream >> static_cast<GeneticAlgorithm::AbstractUnit&>(*(unit.get())); return inputStream; }
 
 }
 

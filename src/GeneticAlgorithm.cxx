@@ -9,6 +9,7 @@ namespace apr {
         assert((numberOfGenes > 0) && (lowerBounds.size() == numberOfGenes) && (upperBounds.size() == numberOfGenes));
         m_NumberOfGenes = numberOfGenes;
         m_LowerBounds = lowerBounds;
+        m_UpperBounds.resize(m_NumberOfGenes);
         const double* upperBoundsIterator = upperBounds.begin();
         for (std::uint8_t index = 0; index < m_NumberOfGenes; ++index)
             SetUpperBound(index, *upperBoundsIterator++);
@@ -131,7 +132,7 @@ namespace apr {
         uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
         for (std::uint8_t index = 0; index < numberOfGenes; ++index) {
             uint64_t firstParentGene = firstParent->GetGeneBitString(index);
-            uint64_t secondParentGene = firstParent->GetGeneBitString(index);
+            uint64_t secondParentGene = secondParent->GetGeneBitString(index);
             firstChild->SetGeneBitString(index, (firstParentGene & ~bitMask) | (secondParentGene & bitMask));
             secondChild->SetGeneBitString(index, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
         }
@@ -158,7 +159,7 @@ namespace apr {
         uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
         for (std::uint8_t index = 0; index < numberOfGenes; ++index) {
             uint64_t firstParentGene = firstParent->GetGeneBitString(index);
-            uint64_t secondParentGene = firstParent->GetGeneBitString(index);
+            uint64_t secondParentGene = secondParent->GetGeneBitString(index);
             firstChild->SetGeneBitString(index, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
             secondChild->SetGeneBitString(index, (firstParentGene & ~bitMask) | (secondParentGene & bitMask));
         }
@@ -252,7 +253,7 @@ namespace apr {
         BinaryPresentation* presentation = dynamic_cast<BinaryPresentation*>(GetPresentation().get());
         assert((presentation) && (index < presentation->GetNumberOfGenes()) && (str.size() == presentation->GetNumberOfBitsPerGene()));
         uint64_t bitString = 0;
-        for (const char* cstr = str.c_str(); cstr; ++cstr)
+        for (const char* cstr = str.c_str(); *cstr; ++cstr)
             bitString = (bitString << 1) | (*cstr != '0');
         GetGenes()[index] = bitString;
     }
