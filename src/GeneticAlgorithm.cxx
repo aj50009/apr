@@ -258,4 +258,80 @@ namespace apr {
         GetGenes()[index] = bitString;
     }
 
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::AverageCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) {
+        FloatingPointPresentation* presentation = reinterpret_cast<FloatingPointPresentation*>(firstParentUnit->GetPresentation().get());
+        assert((presentation) && (presentation == secondParentUnit->GetPresentation().get()));
+        FloatingPointUnit* firstChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
+        FloatingPointUnit* secondChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
+        uint8_t numberOfGenes = presentation->GetNumberOfGenes();
+        for (uint8_t index = 0; index < numberOfGenes; ++index) {
+            double averageGeneReal = (firstParentUnit->GetGeneReal(index) + secondParentUnit->GetGeneReal(index)) / 2.0;
+            firstChild->SetGeneReal(index, averageGeneReal);
+            secondChild->SetGeneReal(index, averageGeneReal);
+        }
+        return std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(AbstractUnit::Ptr(firstChild), AbstractUnit::Ptr(secondChild));
+    }
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) {
+        return ArithmeticCrossover(firstParentUnit, secondParentUnit, (std::rand() % 10001) / 10000.0);
+    }
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double interpolationRatio) {
+        FloatingPointPresentation* presentation = reinterpret_cast<FloatingPointPresentation*>(firstParentUnit->GetPresentation().get());
+        assert((presentation) && (presentation == secondParentUnit->GetPresentation().get()) && (interpolationRatio >= 0.0) && (interpolationRatio <= 1.0));
+        FloatingPointUnit* firstChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
+        FloatingPointUnit* secondChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
+        uint8_t numberOfGenes = presentation->GetNumberOfGenes();
+        for (uint8_t index = 0; index < numberOfGenes; ++index) {
+            double firstParentGeneReal = firstParentUnit->GetGeneReal(index);
+            double secondParentGeneReal = secondParentUnit->GetGeneReal(index);
+            firstChild->SetGeneReal(index, firstParentGeneReal + interpolationRatio * (secondParentGeneReal - firstParentGeneReal));
+            secondChild->SetGeneReal(index, secondParentGeneReal + interpolationRatio * (firstParentGeneReal - secondParentGeneReal));
+        }
+        return std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(AbstractUnit::Ptr(firstChild), AbstractUnit::Ptr(secondChild));
+    }
+    void GeneticAlgorithm::FloatingPointPresentation::UniformMutation(const AbstractUnit::Ptr& unit) {
+        FloatingPointPresentation* presentation = reinterpret_cast<FloatingPointPresentation*>(unit->GetPresentation().get());
+        assert(presentation);
+        uint8_t index = std::rand() % presentation->GetNumberOfGenes();
+        unit->SetGeneReal(index, unit->GetGeneReal(index) + (std::rand() % 20001) / 10000.0 - 1.0);
+    }
+    GeneticAlgorithm::FloatingPointPresentation::FloatingPointPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds) : AbstractPresentation(numberOfGenes, lowerBounds, upperBounds) {
+        SetAverageCrossoverFunction();
+        SetUniformMutationFunction();
+    }
+    GeneticAlgorithm::FloatingPointPresentation::~FloatingPointPresentation() { }
+    void GeneticAlgorithm::FloatingPointPresentation::SetAverageCrossoverFunction() {
+        m_CrossoverFunction = AverageCrossover;
+    }
+    void GeneticAlgorithm::FloatingPointPresentation::SetArithmeticCrossoverFunction() {
+        m_CrossoverFunction = static_cast<std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(*)(const AbstractUnit::Ptr&, const AbstractUnit::Ptr&)>(ArithmeticCrossover);
+    }
+    void GeneticAlgorithm::FloatingPointPresentation::SetCustomCrossoverFunction(const CrossoverFunction& crossoverFunction) {
+        m_CrossoverFunction = crossoverFunction;
+    }
+    void GeneticAlgorithm::FloatingPointPresentation::SetUniformMutationFunction() {
+        m_MutationFunction = UniformMutation;
+    }
+    void GeneticAlgorithm::FloatingPointPresentation::SetCustomMutationFunction(const MutationFunction& mutationFunction) {
+        m_MutationFunction = mutationFunction;
+    }
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::Crossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) const {
+        return m_CrossoverFunction(firstParentUnit, secondParentUnit);
+    }
+    void GeneticAlgorithm::FloatingPointPresentation::Mutate(const AbstractUnit::Ptr& unit) const {
+        m_MutationFunction(unit);
+    }
+
+    GeneticAlgorithm::FloatingPointUnit::FloatingPointUnit(const AbstractPresentation::Ptr& presentation) : AbstractUnit(presentation) {
+        assert(dynamic_cast<FloatingPointPresentation*>(presentation.get()));
+    }
+    GeneticAlgorithm::FloatingPointUnit::~FloatingPointUnit() { }
+    double GeneticAlgorithm::FloatingPointUnit::GetGeneReal(std::uint8_t index) const {
+        assert(index < GetPresentation()->GetNumberOfGenes());
+        return reinterpret_cast<const double*>(GetGenes())[index];
+    }
+    void GeneticAlgorithm::FloatingPointUnit::SetGeneReal(std::uint8_t index, double real) {
+        assert(index < GetPresentation()->GetNumberOfGenes());
+        reinterpret_cast<double*>(GetGenes())[index] = real;
+    }
+
 }

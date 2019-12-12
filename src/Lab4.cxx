@@ -1,5 +1,6 @@
 #include <GeneticAlgorithm.hxx>
 #include <vector>
+#include <iostream>
 #include <cstddef>
 #include <cassert>
 #include <cmath>
@@ -45,7 +46,15 @@ static double f7(const std::vector<double>& x) {
 }
 
 using namespace apr;
+using GenAlg = GeneticAlgorithm;
+using PresP = GeneticAlgorithm::AbstractPresentation::Ptr;
+using UnitP = GeneticAlgorithm::AbstractUnit::Ptr;
+using BinPres = GeneticAlgorithm::BinaryPresentation;
+using BinUnit = GeneticAlgorithm::BinaryUnit;
+using FloatPres = GeneticAlgorithm::FloatingPointPresentation;
+using FloatUnit = GeneticAlgorithm::FloatingPointUnit;
 
 int main(int argc, char** argv) {
+    std::srand(0x42069);
     return 0;
 }

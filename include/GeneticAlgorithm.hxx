@@ -108,6 +108,36 @@ namespace apr {
             virtual std::string GetGeneString(std::uint8_t index) const override;
             virtual void SetGeneString(std::uint8_t index, const std::string& str) override;
         };
+
+        class FloatingPointPresentation : public AbstractPresentation {
+        public:
+            using Ptr = std::shared_ptr<FloatingPointPresentation>;
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> AverageCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double interpolationRatio);
+            static void UniformMutation(const AbstractUnit::Ptr& unit);
+            FloatingPointPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds);
+            virtual ~FloatingPointPresentation();
+            void SetAverageCrossoverFunction();
+            void SetArithmeticCrossoverFunction();
+            void SetCustomCrossoverFunction(const CrossoverFunction& crossoverFunction);
+            void SetUniformMutationFunction();
+            void SetCustomMutationFunction(const MutationFunction& mutationFunction);
+            virtual std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> Crossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) const override;
+            virtual void Mutate(const AbstractUnit::Ptr& unit) const override;
+        private:
+            CrossoverFunction m_CrossoverFunction;
+            MutationFunction m_MutationFunction;
+        };
+
+        class FloatingPointUnit : public AbstractUnit {
+        public:
+            using Ptr = std::shared_ptr<FloatingPointUnit>;
+            FloatingPointUnit(const AbstractPresentation::Ptr& presentation);
+            virtual ~FloatingPointUnit();
+            virtual double GetGeneReal(std::uint8_t index) const override;
+            virtual void SetGeneReal(std::uint8_t index, double real) override;
+        };
     };
 
     inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::AbstractUnit& unit) { unit.WriteToOutputStream(outputStream); return outputStream; }
@@ -119,6 +149,11 @@ namespace apr {
     inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::BinaryUnit::Ptr& unit) { outputStream << static_cast<const GeneticAlgorithm::AbstractUnit&>(*(unit.get())); return outputStream; }
     inline std::istream& operator>>(std::istream& inputStream, GeneticAlgorithm::BinaryUnit& unit) { inputStream >> static_cast<GeneticAlgorithm::AbstractUnit&>(unit); return inputStream; }
     inline std::istream& operator>>(std::istream& inputStream, const GeneticAlgorithm::BinaryUnit::Ptr& unit) { inputStream >> static_cast<GeneticAlgorithm::AbstractUnit&>(*(unit.get())); return inputStream; }
+
+    inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::FloatingPointUnit& unit) { outputStream << static_cast<const GeneticAlgorithm::AbstractUnit&>(unit); return outputStream; }
+    inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::FloatingPointUnit::Ptr& unit) { outputStream << static_cast<const GeneticAlgorithm::AbstractUnit&>(*(unit.get())); return outputStream; }
+    inline std::istream& operator>>(std::istream& inputStream, GeneticAlgorithm::FloatingPointUnit& unit) { inputStream >> static_cast<GeneticAlgorithm::AbstractUnit&>(unit); return inputStream; }
+    inline std::istream& operator>>(std::istream& inputStream, const GeneticAlgorithm::FloatingPointUnit::Ptr& unit) { inputStream >> static_cast<GeneticAlgorithm::AbstractUnit&>(*(unit.get())); return inputStream; }
 
 }
 
