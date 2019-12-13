@@ -28,3 +28,17 @@ add_executable(
     "${CMAKE_CURRENT_SOURCE_DIR}/GeneticAlgorithm.cxx"
     "${CMAKE_CURRENT_SOURCE_DIR}/Lab4.cxx"
 )
+
+# Add lab 4 (3) executable target
+add_executable(
+    lab4_3
+    "${CMAKE_CURRENT_SOURCE_DIR}/GeneticAlgorithm.cxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Lab4_3.cxx"
+)
+
+# Add lab 4 (4) executable target
+add_executable(
+    lab4_4
+    "${CMAKE_CURRENT_SOURCE_DIR}/GeneticAlgorithm.cxx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Lab4_4.cxx"
+)

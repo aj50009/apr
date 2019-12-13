@@ -165,12 +165,14 @@ namespace apr {
         std::vector<double> Solve(const GoalFunction& goalFunction, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
         std::vector<double> Solve(const GoalFunction& goalFunction, const std::vector<double>& startingPoint, double initialOffset = 1.0, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
         double Fitness(const GoalFunction& goalFunction, const AbstractUnit::Ptr& unit);
+        inline std::size_t GetLastSolveNumCalls() const { return m_LastSolveNumCalls; }
     
     private:
         std::size_t m_PopulationSize;
         AbstractPresentation::Ptr m_Presentation;
         double m_MutationChance;
         std::size_t m_MaxGoalFunctionEvaluations;
+        std::size_t m_LastSolveNumCalls;
     };
 
     inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::AbstractUnit& unit) { unit.WriteToOutputStream(outputStream); return outputStream; }

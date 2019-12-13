@@ -442,8 +442,10 @@ namespace apr {
             x.clear();
             for (std::uint8_t geneIndex = 0; geneIndex < numberOfGenes; ++geneIndex)
                 x.push_back(bestUnitPair->first->GetGeneReal(geneIndex));
-            if (bestUnitPair->second < EPSILON)
+            if (bestUnitPair->second < EPSILON) {
+                m_LastSolveNumCalls = goalFunctionEvaluations;
                 return x;
+            }
             logFunction(x, population, bestUnitPairIndex, goalFunctionEvaluations);
             std::size_t selected[3];
             selected[0] = std::rand() % m_PopulationSize;
@@ -486,6 +488,7 @@ namespace apr {
             worstSelectedUnitPair->first = (firstChildFitness <= secondChildFitness) ? children.first : children.second;
             worstSelectedUnitPair->second = (firstChildFitness <= secondChildFitness) ? firstChildFitness : secondChildFitness;
         }
+        m_LastSolveNumCalls = goalFunctionEvaluations;
         return x;
     }
     double GeneticAlgorithm::Fitness(const GoalFunction& goalFunction, const AbstractUnit::Ptr& unit) {
