@@ -164,10 +164,14 @@ namespace apr {
         void SetMaxGoalFunctionEvaluations(std::size_t maxGoalFunctionEvaluations);
         std::vector<double> Solve(const GoalFunction& goalFunction, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
         std::vector<double> Solve(const GoalFunction& goalFunction, const std::vector<double>& startingPoint, double initialOffset = 1.0, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
+        std::vector<double> SolveSpecial(const GoalFunction& goalFunction, std::size_t selectionSize, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
+        std::vector<double> SolveSpecial(const GoalFunction& goalFunction, std::size_t selectionSize, const std::vector<double>& startingPoint, double initialOffset = 1.0, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
         double Fitness(const GoalFunction& goalFunction, const AbstractUnit::Ptr& unit);
         inline std::size_t GetLastSolveNumCalls() const { return m_LastSolveNumCalls; }
     
     private:
+        void SpecialSelection(std::vector<std::pair<AbstractUnit::Ptr, double>>& population, std::size_t selectionSize, std::pair<AbstractUnit::Ptr, double>** worstOut, std::pair<AbstractUnit::Ptr, double>** firstParent, std::pair<AbstractUnit::Ptr, double>** secondParent);
+        static bool Contains(const std::vector<std::size_t>& vec, std::size_t val);
         std::size_t m_PopulationSize;
         AbstractPresentation::Ptr m_Presentation;
         double m_MutationChance;

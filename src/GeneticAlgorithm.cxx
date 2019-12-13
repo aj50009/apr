@@ -491,6 +491,72 @@ namespace apr {
         m_LastSolveNumCalls = goalFunctionEvaluations;
         return x;
     }
+    std::vector<double> GeneticAlgorithm::SolveSpecial(const GoalFunction& goalFunction, std::size_t selectionSize, const LogFunction& logFunction) {
+        double lowestBound = m_Presentation->GetLowerBound(0);
+        double highestBound = m_Presentation->GetUpperBound(0);
+        std::uint8_t numberOfGenes = m_Presentation->GetNumberOfGenes();
+        for (std::uint8_t index = 1; index < numberOfGenes; ++index) {
+            lowestBound = std::min(lowestBound, m_Presentation->GetLowerBound(index));
+            highestBound = std::max(highestBound, m_Presentation->GetUpperBound(index));
+        }
+        return SolveSpecial(goalFunction, selectionSize, std::vector<double>(numberOfGenes, (lowestBound + highestBound) / 2.0), (highestBound - lowestBound) / 2.0, logFunction);
+    }
+    std::vector<double> GeneticAlgorithm::SolveSpecial(const GoalFunction& goalFunction, std::size_t selectionSize, const std::vector<double>& startingPoint, double initialOffset, const LogFunction& logFunction) {
+        std::uint8_t numberOfGenes = m_Presentation->GetNumberOfGenes();
+        assert((startingPoint.size() == numberOfGenes) && (selectionSize >= 3) && (selectionSize <= m_PopulationSize));
+        std::vector<std::pair<AbstractUnit::Ptr, double>> population;
+        AbstractUnit::Ptr firstUnit = m_Presentation->NewUnit(m_Presentation);
+        for (std::uint8_t geneIndex = 0; geneIndex < numberOfGenes; ++geneIndex)
+            firstUnit->SetGeneReal(geneIndex, startingPoint[geneIndex]);
+        firstUnit->Clamp();
+        population.push_back(std::pair<AbstractUnit::Ptr, double>(firstUnit, Fitness(goalFunction, firstUnit)));
+        for (std::size_t unitIndex = 1; unitIndex < m_PopulationSize; ++unitIndex) {
+            AbstractUnit::Ptr unit = m_Presentation->NewUnit(m_Presentation);
+            for (std::uint8_t geneIndex = 0; geneIndex < numberOfGenes; ++geneIndex)
+                unit->SetGeneReal(geneIndex, startingPoint[geneIndex] + initialOffset * ((std::rand() % 20001) / 10000.0 - 1.0));
+            unit->Clamp();
+            population.push_back(std::pair<AbstractUnit::Ptr, double>(unit, Fitness(goalFunction, unit)));
+        }
+        std::size_t goalFunctionEvaluations = m_PopulationSize;
+        std::vector<double> x;
+        while (goalFunctionEvaluations < m_MaxGoalFunctionEvaluations) {
+            const std::pair<AbstractUnit::Ptr, double>* bestUnitPair = &(population[0]);
+            std::size_t bestUnitPairIndex = 0;
+            for (std::size_t pairIndex = 1; pairIndex < m_PopulationSize; ++pairIndex)
+                if (population[pairIndex].second < bestUnitPair->second) {
+                    bestUnitPair = &(population[pairIndex]);
+                    bestUnitPairIndex = pairIndex;
+                }
+            x.clear();
+            for (std::uint8_t geneIndex = 0; geneIndex < numberOfGenes; ++geneIndex)
+                x.push_back(bestUnitPair->first->GetGeneReal(geneIndex));
+            if (bestUnitPair->second < EPSILON) {
+                m_LastSolveNumCalls = goalFunctionEvaluations;
+                return x;
+            }
+            logFunction(x, population, bestUnitPairIndex, goalFunctionEvaluations);
+            std::pair<AbstractUnit::Ptr, double>* worstSelectedUnitPair;
+            std::pair<AbstractUnit::Ptr, double>* firstParentUnitPair;
+            std::pair<AbstractUnit::Ptr, double>* secondParentUnitPair;
+            SpecialSelection(population, selectionSize, &worstSelectedUnitPair, &firstParentUnitPair, &secondParentUnitPair);
+            std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> children = m_Presentation->Crossover(firstParentUnitPair->first, secondParentUnitPair->first);
+            children.first->Clamp();
+            children.second->Clamp();
+            if (((std::rand() % 10001) / 10000.0) <= m_MutationChance) {
+                m_Presentation->Mutate(children.first);
+                m_Presentation->Mutate(children.second);
+                children.first->Clamp();
+                children.second->Clamp();
+            }
+            double firstChildFitness = Fitness(goalFunction, children.first);
+            double secondChildFitness = Fitness(goalFunction, children.second);
+            goalFunctionEvaluations += 2;
+            worstSelectedUnitPair->first = (firstChildFitness <= secondChildFitness) ? children.first : children.second;
+            worstSelectedUnitPair->second = (firstChildFitness <= secondChildFitness) ? firstChildFitness : secondChildFitness;
+        }
+        m_LastSolveNumCalls = goalFunctionEvaluations;
+        return x;
+    }
     double GeneticAlgorithm::Fitness(const GoalFunction& goalFunction, const AbstractUnit::Ptr& unit) {
         assert(m_Presentation.get() == unit->GetPresentation().get());
         std::vector<double> x;
@@ -498,6 +564,39 @@ namespace apr {
         for (uint8_t index = 0; index < numberOfGenes; ++index)
             x.push_back(unit->GetGeneReal(index));
         return goalFunction(x);
+    }
+    void GeneticAlgorithm::SpecialSelection(std::vector<std::pair<AbstractUnit::Ptr, double>>& population, std::size_t selectionSize, std::pair<AbstractUnit::Ptr, double>** worstOut, std::pair<AbstractUnit::Ptr, double>** firstParent, std::pair<AbstractUnit::Ptr, double>** secondParent) {
+        double worstFitness = std::numeric_limits<double>::min();
+        std::size_t worstIndex;
+        std::vector<std::size_t> selections;
+        for (std::size_t i = 0; i < selectionSize; ++i) {
+            std::size_t selection = std::rand() % m_PopulationSize;
+            while (Contains(selections, selection))
+                selection = (selection + 1) % m_PopulationSize;
+            selections.push_back(selection);
+            std::pair<AbstractUnit::Ptr, double>* pair = &(population[selection]);
+            if (pair->second > worstFitness) {
+                *worstOut = pair;
+                worstFitness = pair->second;
+                worstIndex = selection;
+            }
+        }
+        std::size_t firstIndex = std::rand() % selections.size();
+        if (selections[firstIndex] == worstIndex)
+            firstIndex = (firstIndex + 1) % selections.size();
+        std::size_t secondIndex = std::rand() % selections.size();
+        if ((selections[secondIndex] == worstIndex) || (selections[secondIndex] == selections[firstIndex]))
+            secondIndex = (secondIndex + 1) % selections.size();
+        if ((selections[secondIndex] == worstIndex) || (selections[secondIndex] == selections[firstIndex]))
+            secondIndex = (secondIndex + 1) % selections.size();
+        *firstParent = &(population[selections[firstIndex]]);
+        *secondParent = &(population[selections[secondIndex]]);
+    }
+    bool GeneticAlgorithm::Contains(const std::vector<std::size_t>& vec, std::size_t val) {
+        for (std::size_t v : vec)
+            if (v == val)
+                return true;
+        return false;
     }
 
 }
