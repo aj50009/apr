@@ -5,6 +5,10 @@
 #include <cassert>
 #include <cmath>
 
+#define SEPARATOR "----------------------------------------"
+#define START_BLOCK(x) { std::cout << SEPARATOR << std::endl << " " << (x) << std::endl << SEPARATOR << std::endl; }
+#define END_BLOCK() { std::cout << std::endl; }
+
 /* Rosenbrock's 'banana' function; x0 = (-1.9, 2); xmin = (1, 1); fmin = 0 */
 static double f1(const std::vector<double>& x) {
     assert(x.size() == 2);
@@ -45,6 +49,14 @@ static double f7(const std::vector<double>& x) {
     return std::pow(sum, 0.25) * (1.0 + sin * sin);
 }
 
+static std::ostream& operator<<(std::ostream& outputStream, const std::vector<double>& x) {
+    outputStream << "(";
+    for (double xi : x)
+        outputStream << " " << xi;
+    outputStream << " )";
+    return outputStream;
+}
+
 using namespace apr;
 using GenAlg = GeneticAlgorithm;
 using PresP = GeneticAlgorithm::AbstractPresentation::Ptr;
@@ -56,5 +68,10 @@ using FloatUnit = GeneticAlgorithm::FloatingPointUnit;
 
 int main(int argc, char** argv) {
     std::srand(0x42069);
+    
+    START_BLOCK("TASK 1") {
+        
+    } END_BLOCK()
+
     return 0;
 }

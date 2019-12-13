@@ -1,5 +1,6 @@
 #include <GeneticAlgorithm.hxx>
 #include <sstream>
+#include <limits>
 #include <cassert>
 #include <cmath>
 
@@ -211,6 +212,9 @@ namespace apr {
     void GeneticAlgorithm::BinaryPresentation::Mutate(const AbstractUnit::Ptr& unit) const {
         m_MutationFunction(unit);
     }
+    GeneticAlgorithm::AbstractUnit::Ptr GeneticAlgorithm::BinaryPresentation::NewUnit(const AbstractPresentation::Ptr& presentation) const {
+        return AbstractUnit::Ptr(new BinaryUnit(presentation));
+    }
 
     GeneticAlgorithm::BinaryUnit::BinaryUnit(const AbstractPresentation::Ptr& presentation) : AbstractUnit(presentation) {
         assert(dynamic_cast<BinaryPresentation*>(presentation.get()));
@@ -320,6 +324,9 @@ namespace apr {
     void GeneticAlgorithm::FloatingPointPresentation::Mutate(const AbstractUnit::Ptr& unit) const {
         m_MutationFunction(unit);
     }
+    GeneticAlgorithm::AbstractUnit::Ptr GeneticAlgorithm::FloatingPointPresentation::NewUnit(const AbstractPresentation::Ptr& presentation) const {
+        return AbstractUnit::Ptr(new FloatingPointUnit(presentation));
+    }
 
     GeneticAlgorithm::FloatingPointUnit::FloatingPointUnit(const AbstractPresentation::Ptr& presentation) : AbstractUnit(presentation) {
         assert(dynamic_cast<FloatingPointPresentation*>(presentation.get()));
@@ -332,6 +339,134 @@ namespace apr {
     void GeneticAlgorithm::FloatingPointUnit::SetGeneReal(std::uint8_t index, double real) {
         assert(index < GetPresentation()->GetNumberOfGenes());
         reinterpret_cast<double*>(GetGenes())[index] = real;
+    }
+
+    GeneticAlgorithm::GeneticAlgorithm(std::size_t populationSize, const AbstractPresentation::Ptr& presentation, double mutationChance, std::size_t maxGoalFunctionEvaluations) {
+        SetPopulationSize(populationSize);
+        SetPresentation(presentation);
+        SetMutationChance(mutationChance);
+        SetMaxGoalFunctionEvaluations(maxGoalFunctionEvaluations);
+    }
+    GeneticAlgorithm::~GeneticAlgorithm() { }
+    std::size_t GeneticAlgorithm::GetPopulationSize() const {
+        return m_PopulationSize;
+    }
+    void GeneticAlgorithm::SetPopulationSize(std::size_t populationSize) {
+        assert(populationSize >= 3);
+        m_PopulationSize = populationSize;
+    }
+    const GeneticAlgorithm::AbstractPresentation::Ptr& GeneticAlgorithm::GetPresentation() const {
+        return m_Presentation;
+    }
+    void GeneticAlgorithm::SetPresentation(const AbstractPresentation::Ptr& presentation) {
+        m_Presentation = presentation;
+    }
+    double GeneticAlgorithm::GetMutationChance() const {
+        return m_MutationChance;
+    }
+    void GeneticAlgorithm::SetMutationChance(double mutationChance) {
+        assert((mutationChance >= 0.0) && (mutationChance <= 1.0));
+        m_MutationChance = mutationChance;
+    }
+    std::size_t GeneticAlgorithm::GetMaxGoalFunctionEvaluations() const {
+        return m_MaxGoalFunctionEvaluations;
+    }
+    void GeneticAlgorithm::SetMaxGoalFunctionEvaluations(std::size_t maxGoalFunctionEvaluations) {
+        assert(maxGoalFunctionEvaluations > 0);
+        m_MaxGoalFunctionEvaluations = maxGoalFunctionEvaluations;
+    }
+    std::vector<double> GeneticAlgorithm::Solve(const GoalFunction& goalFunction, const LogFunction& logFunction) {
+        double lowestBound = m_Presentation->GetLowerBound(0);
+        double highestBound = m_Presentation->GetUpperBound(0);
+        std::uint8_t numberOfGenes = m_Presentation->GetNumberOfGenes();
+        for (std::uint8_t index = 1; index < numberOfGenes; ++index) {
+            lowestBound = std::min(lowestBound, m_Presentation->GetLowerBound(index));
+            highestBound = std::max(highestBound, m_Presentation->GetUpperBound(index));
+        }
+        return Solve(goalFunction, std::vector<double>(numberOfGenes, (lowestBound + highestBound) / 2.0), (highestBound - lowestBound) / 2.0, logFunction);
+    }
+    std::vector<double> GeneticAlgorithm::Solve(const GoalFunction& goalFunction, const std::vector<double>& startingPoint, double initialOffset, const LogFunction& logFunction) {
+        std::uint8_t numberOfGenes = m_Presentation->GetNumberOfGenes();
+        assert(startingPoint.size() == numberOfGenes);
+        std::vector<std::pair<AbstractUnit::Ptr, double>> population;
+        AbstractUnit::Ptr firstUnit = m_Presentation->NewUnit(m_Presentation);
+        for (std::uint8_t geneIndex = 0; geneIndex < numberOfGenes; ++geneIndex)
+            firstUnit->SetGeneReal(geneIndex, startingPoint[geneIndex]);
+        firstUnit->Clamp();
+        population.push_back(std::pair<AbstractUnit::Ptr, double>(firstUnit, Fitness(goalFunction, firstUnit)));
+        for (std::size_t unitIndex = 1; unitIndex < m_PopulationSize; ++unitIndex) {
+            AbstractUnit::Ptr unit = m_Presentation->NewUnit(m_Presentation);
+            for (std::uint8_t geneIndex = 0; geneIndex < numberOfGenes; ++geneIndex)
+                unit->SetGeneReal(geneIndex, startingPoint[geneIndex] + initialOffset * ((std::rand() % 20001) / 10000.0 - 1.0));
+            unit->Clamp();
+            population.push_back(std::pair<AbstractUnit::Ptr, double>(unit, Fitness(goalFunction, unit)));
+        }
+        std::size_t goalFunctionEvaluations = m_PopulationSize;
+        std::vector<double> x;
+        while (goalFunctionEvaluations < m_MaxGoalFunctionEvaluations) {
+            const std::pair<AbstractUnit::Ptr, double>* bestUnitPair = &(population[0]);
+            std::size_t bestUnitPairIndex = 0;
+            for (std::size_t pairIndex = 1; pairIndex < m_PopulationSize; ++pairIndex)
+                if (population[pairIndex].second < bestUnitPair->second) {
+                    bestUnitPair = &(population[pairIndex]);
+                    bestUnitPairIndex = pairIndex;
+                }
+            x.clear();
+            for (std::uint8_t geneIndex = 0; geneIndex < numberOfGenes; ++geneIndex)
+                x.push_back(bestUnitPair->first->GetGeneReal(geneIndex));
+            if (bestUnitPair->second < EPSILON)
+                return x;
+            logFunction(x, population, bestUnitPairIndex, goalFunctionEvaluations);
+            std::size_t selected[3];
+            selected[0] = std::rand() % m_PopulationSize;
+            selected[1] = std::rand() % (m_PopulationSize - 1);
+            if (selected[1] == selected[0])
+                selected[1]++;
+            selected[2] = std::rand() % (m_PopulationSize - 2);
+            if ((selected[2] == selected[0]) || (selected[2] == selected[1]))
+                selected[2]++;
+            if ((selected[2] == selected[0]) || (selected[2] == selected[1]))
+                selected[2]++;
+            std::pair<AbstractUnit::Ptr, double>* worstSelectedUnitPair;
+            const std::pair<AbstractUnit::Ptr, double>* firstParentUnitPair;
+            const std::pair<AbstractUnit::Ptr, double>* secondParentUnitPair;
+            if ((population[selected[0]].second >= population[selected[1]].second) && (population[selected[0]].second >= population[selected[2]].second)) {
+                worstSelectedUnitPair = &(population[selected[0]]);
+                firstParentUnitPair = &(population[selected[1]]);
+                secondParentUnitPair = &(population[selected[2]]);
+            } else if ((population[selected[1]].second >= population[selected[0]].second) && (population[selected[1]].second >= population[selected[2]].second)) {
+                worstSelectedUnitPair = &(population[selected[1]]);
+                firstParentUnitPair = &(population[selected[0]]);
+                secondParentUnitPair = &(population[selected[2]]);
+            } else {
+                worstSelectedUnitPair = &(population[selected[2]]);
+                firstParentUnitPair = &(population[selected[0]]);
+                secondParentUnitPair = &(population[selected[1]]);
+            }
+            std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> children = m_Presentation->Crossover(firstParentUnitPair->first, secondParentUnitPair->first);
+            children.first->Clamp();
+            children.second->Clamp();
+            double firstChildFitness = Fitness(goalFunction, children.first);
+            double secondChildFitness = Fitness(goalFunction, children.second);
+            goalFunctionEvaluations += 2;
+            worstSelectedUnitPair->first = (firstChildFitness <= secondChildFitness) ? children.first : children.second;
+            worstSelectedUnitPair->second = (firstChildFitness <= secondChildFitness) ? firstChildFitness : secondChildFitness;
+            if (((std::rand() % 10001) / 10000.0) <= m_MutationChance) {
+                m_Presentation->Mutate(worstSelectedUnitPair->first);
+                worstSelectedUnitPair->first->Clamp();
+                worstSelectedUnitPair->second = Fitness(goalFunction, worstSelectedUnitPair->first);
+                goalFunctionEvaluations++;
+            }
+        }
+        return x;
+    }
+    double GeneticAlgorithm::Fitness(const GoalFunction& goalFunction, const AbstractUnit::Ptr& unit) {
+        assert(m_Presentation.get() == unit->GetPresentation().get());
+        std::vector<double> x;
+        uint8_t numberOfGenes = m_Presentation->GetNumberOfGenes();
+        for (uint8_t index = 0; index < numberOfGenes; ++index)
+            x.push_back(unit->GetGeneReal(index));
+        return goalFunction(x);
     }
 
 }

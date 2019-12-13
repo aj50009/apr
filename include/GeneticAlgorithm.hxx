@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <cstddef>
 
+#define EPSILON 1e-6
+
 namespace apr {
 
     class GeneticAlgorithm {
@@ -31,6 +33,9 @@ namespace apr {
             void SetUpperBound(std::uint8_t index, double upperBound);
             virtual std::pair<std::shared_ptr<AbstractUnit>, std::shared_ptr<AbstractUnit>> Crossover(const std::shared_ptr<AbstractUnit>& firstParentUnit, const std::shared_ptr<AbstractUnit>& secondParentUnit) const = 0;
             virtual void Mutate(const std::shared_ptr<AbstractUnit>& unit) const = 0;
+        protected:
+            friend GeneticAlgorithm;
+            virtual std::shared_ptr<AbstractUnit> NewUnit(const Ptr& presentation) const = 0;
         private:
             std::uint8_t m_NumberOfGenes;
             std::vector<double> m_LowerBounds;
@@ -87,6 +92,8 @@ namespace apr {
             void SetCustomMutationFunction(const MutationFunction& mutationFunction);
             virtual std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> Crossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) const override;
             virtual void Mutate(const AbstractUnit::Ptr& unit) const override;
+        protected:
+            virtual AbstractUnit::Ptr NewUnit(const AbstractPresentation::Ptr& presentation) const override;
         private:
             std::uint8_t m_NumberOfBitsPerGene;
             CrossoverFunction m_CrossoverFunction;
@@ -125,6 +132,8 @@ namespace apr {
             void SetCustomMutationFunction(const MutationFunction& mutationFunction);
             virtual std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> Crossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) const override;
             virtual void Mutate(const AbstractUnit::Ptr& unit) const override;
+        protected:
+            virtual AbstractUnit::Ptr NewUnit(const AbstractPresentation::Ptr& presentation) const override;
         private:
             CrossoverFunction m_CrossoverFunction;
             MutationFunction m_MutationFunction;
@@ -138,6 +147,28 @@ namespace apr {
             virtual double GetGeneReal(std::uint8_t index) const override;
             virtual void SetGeneReal(std::uint8_t index, double real) override;
         };
+
+        using GoalFunction = std::function<double(const std::vector<double>&)>;
+        using LogFunction = std::function<void(const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t)>;
+        GeneticAlgorithm(std::size_t populationSize, const AbstractPresentation::Ptr& presentation, double mutationChance = 0.5, std::size_t maxGoalFunctionEvaluations = 1e6);
+        virtual ~GeneticAlgorithm();
+        std::size_t GetPopulationSize() const;
+        void SetPopulationSize(std::size_t populationSize);
+        const AbstractPresentation::Ptr& GetPresentation() const;
+        void SetPresentation(const AbstractPresentation::Ptr& presentation);
+        double GetMutationChance() const;
+        void SetMutationChance(double mutationChance);
+        std::size_t GetMaxGoalFunctionEvaluations() const;
+        void SetMaxGoalFunctionEvaluations(std::size_t maxGoalFunctionEvaluations);
+        std::vector<double> Solve(const GoalFunction& goalFunction, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
+        std::vector<double> Solve(const GoalFunction& goalFunction, const std::vector<double>& startingPoint, double initialOffset = 1.0, const LogFunction& logFunction = [](const std::vector<double>&, const std::vector<std::pair<AbstractUnit::Ptr, double>>&, std::size_t, std::size_t) { });
+        double Fitness(const GoalFunction& goalFunction, const AbstractUnit::Ptr& unit);
+    
+    private:
+        std::size_t m_PopulationSize;
+        AbstractPresentation::Ptr m_Presentation;
+        double m_MutationChance;
+        std::size_t m_MaxGoalFunctionEvaluations;
     };
 
     inline std::ostream& operator<<(std::ostream& outputStream, const GeneticAlgorithm::AbstractUnit& unit) { unit.WriteToOutputStream(outputStream); return outputStream; }
