@@ -81,12 +81,9 @@ using FloatPres = GeneticAlgorithm::FloatingPointPresentation;
 using FloatUnit = GeneticAlgorithm::FloatingPointUnit;
 
 int main(int argc, char** argv) {
-    std::srand(std::time(nullptr));
-    
+    std::srand(0x42069);
     START_BLOCK("TASK 1") {
         
-
     } END_BLOCK()
-
     return 0;
 }

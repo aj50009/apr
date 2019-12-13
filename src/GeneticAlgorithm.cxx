@@ -143,37 +143,41 @@ namespace apr {
             secondChild->SetGeneBitString(breakingGeneIndex, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
             uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
             for (std::uint8_t index = breakingGeneIndex + 1; index < numberOfGenes; ++index) {
-                firstChild->SetGeneBitString(index, secondParent->GetGeneBitString(index));
-                secondChild->SetGeneBitString(index, firstParent->GetGeneBitString(index));
+                firstChild->SetGeneBitString(index, firstParent->GetGeneBitString(index));
+                secondChild->SetGeneBitString(index, secondParent->GetGeneBitString(index));
             }
         }
         return std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(AbstractUnit::Ptr(firstChild), AbstractUnit::Ptr(secondChild));
     }
     std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::BinaryPresentation::SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) {
-        return SegmentedCrossover(firstParentUnit, secondParentUnit, (std::rand() % 10001) / 10000.0);
+        return SegmentedCrossover(firstParentUnit, secondParentUnit, std::rand() % firstParentUnit->GetPresentation()->GetNumberOfGenes(), (std::rand() % 10001) / 10000.0);
     }
-    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::BinaryPresentation::SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double switchChance) {
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::BinaryPresentation::SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t geneIndex, double switchChance) {
         BinaryPresentation* binaryPresentation = dynamic_cast<BinaryPresentation*>(firstParentUnit->GetPresentation().get());
         BinaryUnit* firstParent = dynamic_cast<BinaryUnit*>(firstParentUnit.get());
         BinaryUnit* secondParent = dynamic_cast<BinaryUnit*>(secondParentUnit.get());
-        assert((binaryPresentation) && (firstParent) && (secondParent) && (binaryPresentation == secondParent->GetPresentation().get()) && (switchChance >= 0.0) && (switchChance <= 1.0));
+        assert((binaryPresentation) && (firstParent) && (secondParent) && (binaryPresentation == secondParent->GetPresentation().get()) && (switchChance >= 0.0) && (switchChance <= 1.0) && (geneIndex < binaryPresentation->GetNumberOfGenes()));
         BinaryUnit* firstChild = new BinaryUnit(firstParent->GetPresentation());
         BinaryUnit* secondChild = new BinaryUnit(firstParent->GetPresentation());
         uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
         uint8_t numberOfBitsPerGene = binaryPresentation->GetNumberOfBitsPerGene();
-        uint64_t bitMask;
-        bool bit = true;
         for (std::uint8_t index = 0; index < numberOfGenes; ++index) {
-            bitMask = 0;
-            for (std::uint8_t index = 0; index < numberOfBitsPerGene; ++index) {
-                if (((std::rand() % 10001) / 10000.0) <= switchChance)
-                    bit = !bit;
-                bitMask = (bitMask << 1) | (bit != false);
+            if (index == geneIndex) {
+                uint64_t bitMask = 0;
+                bool bit = true;
+                for (std::uint8_t index = 0; index < numberOfBitsPerGene; ++index) {
+                    if (((std::rand() % 10001) / 10000.0) <= switchChance)
+                        bit = !bit;
+                    bitMask = (bitMask << 1) | (bit != false);
+                }
+                uint64_t firstParentGene = firstParent->GetGeneBitString(index);
+                uint64_t secondParentGene = secondParent->GetGeneBitString(index);
+                firstChild->SetGeneBitString(index, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
+                secondChild->SetGeneBitString(index, (firstParentGene & ~bitMask) | (secondParentGene & bitMask));
+            } else {
+                firstChild->SetGeneBitString(index, firstParent->GetGeneBitString(index));
+                secondChild->SetGeneBitString(index, secondParent->GetGeneBitString(index));
             }
-            uint64_t firstParentGene = firstParent->GetGeneBitString(index);
-            uint64_t secondParentGene = secondParent->GetGeneBitString(index);
-            firstChild->SetGeneBitString(index, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
-            secondChild->SetGeneBitString(index, (firstParentGene & ~bitMask) | (secondParentGene & bitMask));
         }
         return std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(AbstractUnit::Ptr(firstChild), AbstractUnit::Ptr(secondChild));
     }
@@ -470,17 +474,17 @@ namespace apr {
             std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> children = m_Presentation->Crossover(firstParentUnitPair->first, secondParentUnitPair->first);
             children.first->Clamp();
             children.second->Clamp();
+            if (((std::rand() % 10001) / 10000.0) <= m_MutationChance) {
+                m_Presentation->Mutate(children.first);
+                m_Presentation->Mutate(children.second);
+                children.first->Clamp();
+                children.second->Clamp();
+            }
             double firstChildFitness = Fitness(goalFunction, children.first);
             double secondChildFitness = Fitness(goalFunction, children.second);
             goalFunctionEvaluations += 2;
             worstSelectedUnitPair->first = (firstChildFitness <= secondChildFitness) ? children.first : children.second;
             worstSelectedUnitPair->second = (firstChildFitness <= secondChildFitness) ? firstChildFitness : secondChildFitness;
-            if (((std::rand() % 10001) / 10000.0) <= m_MutationChance) {
-                m_Presentation->Mutate(worstSelectedUnitPair->first);
-                worstSelectedUnitPair->first->Clamp();
-                worstSelectedUnitPair->second = Fitness(goalFunction, worstSelectedUnitPair->first);
-                goalFunctionEvaluations++;
-            }
         }
         return x;
     }

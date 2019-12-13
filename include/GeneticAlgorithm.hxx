@@ -79,7 +79,7 @@ namespace apr {
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::size_t breakingPoint);
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
-            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double switchChance);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t geneIndex, double switchChance);
             static void SimpleMutation(const AbstractUnit::Ptr& unit);
             static void SimpleMutation(const AbstractUnit::Ptr& unit, std::size_t bitIndex);
             BinaryPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds, std::uint8_t numberOfBitsPerGene = 64);
