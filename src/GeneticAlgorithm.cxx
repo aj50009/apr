@@ -120,22 +120,32 @@ namespace apr {
     std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::BinaryPresentation::SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) {
         BinaryPresentation* binaryPresentation = dynamic_cast<BinaryPresentation*>(firstParentUnit->GetPresentation().get());
         assert(binaryPresentation);
-        return SinglePointCrossover(firstParentUnit, secondParentUnit, std::rand() % (binaryPresentation->GetNumberOfBitsPerGene() + 1));
+        return SinglePointCrossover(firstParentUnit, secondParentUnit, std::rand() % (binaryPresentation->GetNumberOfGenes() * binaryPresentation->GetNumberOfBitsPerGene() + 1));
     }
-    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::BinaryPresentation::SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t breakingPoint) {
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::BinaryPresentation::SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::size_t breakingPoint) {
         BinaryPresentation* binaryPresentation = dynamic_cast<BinaryPresentation*>(firstParentUnit->GetPresentation().get());
         BinaryUnit* firstParent = dynamic_cast<BinaryUnit*>(firstParentUnit.get());
         BinaryUnit* secondParent = dynamic_cast<BinaryUnit*>(secondParentUnit.get());
-        assert((binaryPresentation) && (firstParent) && (secondParent) && (binaryPresentation == secondParent->GetPresentation().get()) && (breakingPoint <= binaryPresentation->GetNumberOfBitsPerGene()));
-        uint64_t bitMask = (1 << (binaryPresentation->GetNumberOfBitsPerGene() - breakingPoint)) - 1;
+        assert((binaryPresentation) && (firstParent) && (secondParent) && (binaryPresentation == secondParent->GetPresentation().get()) && (breakingPoint <= binaryPresentation->GetNumberOfGenes() * binaryPresentation->GetNumberOfBitsPerGene()));
+        uint8_t breakingGeneIndex = breakingPoint / binaryPresentation->GetNumberOfBitsPerGene();
         BinaryUnit* firstChild = new BinaryUnit(firstParent->GetPresentation());
         BinaryUnit* secondChild = new BinaryUnit(firstParent->GetPresentation());
-        uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
-        for (std::uint8_t index = 0; index < numberOfGenes; ++index) {
-            uint64_t firstParentGene = firstParent->GetGeneBitString(index);
-            uint64_t secondParentGene = secondParent->GetGeneBitString(index);
-            firstChild->SetGeneBitString(index, (firstParentGene & ~bitMask) | (secondParentGene & bitMask));
-            secondChild->SetGeneBitString(index, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
+        for (std::uint8_t index = 0; index < breakingGeneIndex; ++index) {
+            firstChild->SetGeneBitString(index, firstParent->GetGeneBitString(index));
+            secondChild->SetGeneBitString(index, secondParent->GetGeneBitString(index));
+        }
+        if (breakingGeneIndex < binaryPresentation->GetNumberOfGenes()) {
+            uint64_t firstParentGene = firstParent->GetGeneBitString(breakingGeneIndex);
+            uint64_t secondParentGene = secondParent->GetGeneBitString(breakingGeneIndex);
+            uint8_t breakingBitIndex = breakingPoint % binaryPresentation->GetNumberOfBitsPerGene();
+            uint64_t bitMask = (1 << (binaryPresentation->GetNumberOfBitsPerGene() - breakingBitIndex)) - 1;
+            firstChild->SetGeneBitString(breakingGeneIndex, (firstParentGene & ~bitMask) | (secondParentGene & bitMask));
+            secondChild->SetGeneBitString(breakingGeneIndex, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
+            uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
+            for (std::uint8_t index = breakingGeneIndex + 1; index < numberOfGenes; ++index) {
+                firstChild->SetGeneBitString(index, secondParent->GetGeneBitString(index));
+                secondChild->SetGeneBitString(index, firstParent->GetGeneBitString(index));
+            }
         }
         return std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(AbstractUnit::Ptr(firstChild), AbstractUnit::Ptr(secondChild));
     }
@@ -147,18 +157,19 @@ namespace apr {
         BinaryUnit* firstParent = dynamic_cast<BinaryUnit*>(firstParentUnit.get());
         BinaryUnit* secondParent = dynamic_cast<BinaryUnit*>(secondParentUnit.get());
         assert((binaryPresentation) && (firstParent) && (secondParent) && (binaryPresentation == secondParent->GetPresentation().get()) && (switchChance >= 0.0) && (switchChance <= 1.0));
-        uint64_t bitMask = 0;
-        bool bit = true;
-        uint8_t numberOfBitsPerGene = binaryPresentation->GetNumberOfBitsPerGene();
-        for (std::uint8_t index = 0; index < numberOfBitsPerGene; ++index) {
-            if (((std::rand() % 10001) / 10000.0) <= switchChance)
-                bit = !bit;
-            bitMask = (bitMask << 1) | (bit != false);
-        }
         BinaryUnit* firstChild = new BinaryUnit(firstParent->GetPresentation());
         BinaryUnit* secondChild = new BinaryUnit(firstParent->GetPresentation());
         uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
+        uint8_t numberOfBitsPerGene = binaryPresentation->GetNumberOfBitsPerGene();
+        uint64_t bitMask;
+        bool bit = true;
         for (std::uint8_t index = 0; index < numberOfGenes; ++index) {
+            bitMask = 0;
+            for (std::uint8_t index = 0; index < numberOfBitsPerGene; ++index) {
+                if (((std::rand() % 10001) / 10000.0) <= switchChance)
+                    bit = !bit;
+                bitMask = (bitMask << 1) | (bit != false);
+            }
             uint64_t firstParentGene = firstParent->GetGeneBitString(index);
             uint64_t secondParentGene = secondParent->GetGeneBitString(index);
             firstChild->SetGeneBitString(index, (firstParentGene & bitMask) | (secondParentGene & ~bitMask));
@@ -169,17 +180,15 @@ namespace apr {
     void GeneticAlgorithm::BinaryPresentation::SimpleMutation(const AbstractUnit::Ptr& unit) {
         BinaryPresentation* binaryPresentation = dynamic_cast<BinaryPresentation*>(unit->GetPresentation().get());
         assert(binaryPresentation);
-        SimpleMutation(unit, std::rand() % binaryPresentation->GetNumberOfBitsPerGene());
+        SimpleMutation(unit, std::rand() % (binaryPresentation->GetNumberOfGenes() * binaryPresentation->GetNumberOfBitsPerGene()));
     }
-    void GeneticAlgorithm::BinaryPresentation::SimpleMutation(const AbstractUnit::Ptr& unit, std::uint8_t bitIndex) {
+    void GeneticAlgorithm::BinaryPresentation::SimpleMutation(const AbstractUnit::Ptr& unit, std::size_t bitIndex) {
         BinaryPresentation* binaryPresentation = dynamic_cast<BinaryPresentation*>(unit->GetPresentation().get());
         BinaryUnit* binaryUnit = dynamic_cast<BinaryUnit*>(unit.get());
-        assert((binaryPresentation) && (binaryUnit) && (bitIndex < binaryPresentation->GetNumberOfBitsPerGene()));
-        uint64_t bitMask = 1 << bitIndex;
-        uint8_t numberOfGenes = binaryPresentation->GetNumberOfGenes();
-        for (std::uint8_t index = 0; index < numberOfGenes; ++index) {
-            binaryUnit->SetGeneBitString(index, binaryUnit->GetGeneBitString(index) ^ bitMask);
-        }
+        assert((binaryPresentation) && (binaryUnit) && (bitIndex < binaryPresentation->GetNumberOfGenes() * binaryPresentation->GetNumberOfBitsPerGene()));
+        uint64_t bitMask = 1 << (bitIndex % binaryPresentation->GetNumberOfBitsPerGene());
+        uint8_t geneIndex = bitIndex / binaryPresentation->GetNumberOfBitsPerGene();
+        binaryUnit->SetGeneBitString(geneIndex, binaryUnit->GetGeneBitString(geneIndex) ^ bitMask);
     }
     GeneticAlgorithm::BinaryPresentation::BinaryPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds, std::uint8_t numberOfBitsPerGene) : AbstractPresentation(numberOfGenes, lowerBounds, upperBounds) {
         assert((numberOfBitsPerGene > 0) && (numberOfBitsPerGene <= 64));
@@ -263,40 +272,55 @@ namespace apr {
     }
 
     std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::AverageCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) {
+        return AverageCrossover(firstParentUnit, secondParentUnit, std::rand() % firstParentUnit->GetPresentation()->GetNumberOfGenes());
+    }
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::AverageCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t geneIndex) {
         FloatingPointPresentation* presentation = reinterpret_cast<FloatingPointPresentation*>(firstParentUnit->GetPresentation().get());
-        assert((presentation) && (presentation == secondParentUnit->GetPresentation().get()));
+        assert((presentation) && (presentation == secondParentUnit->GetPresentation().get()) && (geneIndex < presentation->GetNumberOfGenes()));
         FloatingPointUnit* firstChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
         FloatingPointUnit* secondChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
         uint8_t numberOfGenes = presentation->GetNumberOfGenes();
         for (uint8_t index = 0; index < numberOfGenes; ++index) {
-            double averageGeneReal = (firstParentUnit->GetGeneReal(index) + secondParentUnit->GetGeneReal(index)) / 2.0;
-            firstChild->SetGeneReal(index, averageGeneReal);
-            secondChild->SetGeneReal(index, averageGeneReal);
+            if (index == geneIndex) {
+                double averageGeneReal = (firstParentUnit->GetGeneReal(index) + secondParentUnit->GetGeneReal(index)) / 2.0;
+                firstChild->SetGeneReal(index, averageGeneReal);
+                secondChild->SetGeneReal(index, averageGeneReal);
+            } else {
+                firstChild->SetGeneReal(index, firstParentUnit->GetGeneReal(index));
+                secondChild->SetGeneReal(index, secondParentUnit->GetGeneReal(index));
+            }
         }
         return std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(AbstractUnit::Ptr(firstChild), AbstractUnit::Ptr(secondChild));
     }
     std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit) {
-        return ArithmeticCrossover(firstParentUnit, secondParentUnit, (std::rand() % 10001) / 10000.0);
+        return ArithmeticCrossover(firstParentUnit, secondParentUnit, std::rand() % firstParentUnit->GetPresentation()->GetNumberOfGenes(), (std::rand() % 10001) / 10000.0);
     }
-    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double interpolationRatio) {
+    std::pair<GeneticAlgorithm::AbstractUnit::Ptr, GeneticAlgorithm::AbstractUnit::Ptr> GeneticAlgorithm::FloatingPointPresentation::ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t geneIndex, double interpolationRatio) {
         FloatingPointPresentation* presentation = reinterpret_cast<FloatingPointPresentation*>(firstParentUnit->GetPresentation().get());
-        assert((presentation) && (presentation == secondParentUnit->GetPresentation().get()) && (interpolationRatio >= 0.0) && (interpolationRatio <= 1.0));
+        assert((presentation) && (presentation == secondParentUnit->GetPresentation().get()) && (interpolationRatio >= 0.0) && (interpolationRatio <= 1.0) && (geneIndex < presentation->GetNumberOfGenes()));
         FloatingPointUnit* firstChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
         FloatingPointUnit* secondChild = new FloatingPointUnit(firstParentUnit->GetPresentation());
         uint8_t numberOfGenes = presentation->GetNumberOfGenes();
         for (uint8_t index = 0; index < numberOfGenes; ++index) {
-            double firstParentGeneReal = firstParentUnit->GetGeneReal(index);
-            double secondParentGeneReal = secondParentUnit->GetGeneReal(index);
-            firstChild->SetGeneReal(index, firstParentGeneReal + interpolationRatio * (secondParentGeneReal - firstParentGeneReal));
-            secondChild->SetGeneReal(index, secondParentGeneReal + interpolationRatio * (firstParentGeneReal - secondParentGeneReal));
+            if (index == geneIndex) {
+                double firstParentGeneReal = firstParentUnit->GetGeneReal(index);
+                double secondParentGeneReal = secondParentUnit->GetGeneReal(index);
+                firstChild->SetGeneReal(index, firstParentGeneReal + interpolationRatio * (secondParentGeneReal - firstParentGeneReal));
+                secondChild->SetGeneReal(index, secondParentGeneReal + interpolationRatio * (firstParentGeneReal - secondParentGeneReal));
+            } else {
+                firstChild->SetGeneReal(index, firstParentUnit->GetGeneReal(index));
+                secondChild->SetGeneReal(index, secondParentUnit->GetGeneReal(index));
+            }
         }
         return std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(AbstractUnit::Ptr(firstChild), AbstractUnit::Ptr(secondChild));
     }
     void GeneticAlgorithm::FloatingPointPresentation::UniformMutation(const AbstractUnit::Ptr& unit) {
+        UniformMutation(unit, std::rand() % unit->GetPresentation()->GetNumberOfGenes());
+    }
+    void GeneticAlgorithm::FloatingPointPresentation::UniformMutation(const AbstractUnit::Ptr& unit, std::uint8_t geneIndex, double mutationOffset) {
         FloatingPointPresentation* presentation = reinterpret_cast<FloatingPointPresentation*>(unit->GetPresentation().get());
-        assert(presentation);
-        uint8_t index = std::rand() % presentation->GetNumberOfGenes();
-        unit->SetGeneReal(index, unit->GetGeneReal(index) + (std::rand() % 20001) / 10000.0 - 1.0);
+        assert((presentation) && (geneIndex < presentation->GetNumberOfGenes()));
+        unit->SetGeneReal(geneIndex, unit->GetGeneReal(geneIndex) + mutationOffset * (std::rand() % 20001) / 10000.0 - 1.0);
     }
     GeneticAlgorithm::FloatingPointPresentation::FloatingPointPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds) : AbstractPresentation(numberOfGenes, lowerBounds, upperBounds) {
         SetAverageCrossoverFunction();
@@ -304,7 +328,7 @@ namespace apr {
     }
     GeneticAlgorithm::FloatingPointPresentation::~FloatingPointPresentation() { }
     void GeneticAlgorithm::FloatingPointPresentation::SetAverageCrossoverFunction() {
-        m_CrossoverFunction = AverageCrossover;
+        m_CrossoverFunction = static_cast<std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(*)(const AbstractUnit::Ptr&, const AbstractUnit::Ptr&)>(AverageCrossover);
     }
     void GeneticAlgorithm::FloatingPointPresentation::SetArithmeticCrossoverFunction() {
         m_CrossoverFunction = static_cast<std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr>(*)(const AbstractUnit::Ptr&, const AbstractUnit::Ptr&)>(ArithmeticCrossover);
@@ -313,7 +337,7 @@ namespace apr {
         m_CrossoverFunction = crossoverFunction;
     }
     void GeneticAlgorithm::FloatingPointPresentation::SetUniformMutationFunction() {
-        m_MutationFunction = UniformMutation;
+        m_MutationFunction = static_cast<void(*)(const AbstractUnit::Ptr&)>(UniformMutation);
     }
     void GeneticAlgorithm::FloatingPointPresentation::SetCustomMutationFunction(const MutationFunction& mutationFunction) {
         m_MutationFunction = mutationFunction;

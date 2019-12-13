@@ -77,11 +77,11 @@ namespace apr {
             using Ptr = std::shared_ptr<BinaryPresentation>;
             static std::size_t GetMinimumNumberOfBitsPerGene(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds, std::uint8_t numberOfDecimalPlaces = 6);
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
-            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t breakingPoint);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SinglePointCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::size_t breakingPoint);
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> SegmentedCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double switchChance);
             static void SimpleMutation(const AbstractUnit::Ptr& unit);
-            static void SimpleMutation(const AbstractUnit::Ptr& unit, std::uint8_t bitIndex);
+            static void SimpleMutation(const AbstractUnit::Ptr& unit, std::size_t bitIndex);
             BinaryPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds, std::uint8_t numberOfBitsPerGene = 64);
             virtual ~BinaryPresentation();
             std::uint8_t GetNumberOfBitsPerGene() const;
@@ -120,9 +120,11 @@ namespace apr {
         public:
             using Ptr = std::shared_ptr<FloatingPointPresentation>;
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> AverageCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> AverageCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t geneIndex);
             static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit);
-            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, double interpolationRatio);
+            static std::pair<AbstractUnit::Ptr, AbstractUnit::Ptr> ArithmeticCrossover(const AbstractUnit::Ptr& firstParentUnit, const AbstractUnit::Ptr& secondParentUnit, std::uint8_t geneIndex, double interpolationRatio);
             static void UniformMutation(const AbstractUnit::Ptr& unit);
+            static void UniformMutation(const AbstractUnit::Ptr& unit, std::uint8_t geneIndex, double mutationOffset = 1.0);
             FloatingPointPresentation(std::uint8_t numberOfGenes, const std::initializer_list<double>& lowerBounds, const std::initializer_list<double>& upperBounds);
             virtual ~FloatingPointPresentation();
             void SetAverageCrossoverFunction();

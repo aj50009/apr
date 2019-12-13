@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cassert>
 #include <cmath>
+#include <ctime>
 
 #define SEPARATOR "----------------------------------------"
 #define START_BLOCK(x) { std::cout << SEPARATOR << std::endl << " " << (x) << std::endl << SEPARATOR << std::endl; }
@@ -57,6 +58,19 @@ static std::ostream& operator<<(std::ostream& outputStream, const std::vector<do
     return outputStream;
 }
 
+static bool operator==(const std::vector<double>& x1, const std::vector<double>& x2) {
+    std::size_t len = x1.size();
+    assert(x2.size() == len);
+    for (std::size_t index = 0; index < len; ++index)
+        if (std::abs(x1[index] - x2[index]) > EPSILON)
+            return false;
+    return true;
+}
+
+static bool operator!=(const std::vector<double>& x1, const std::vector<double>& x2) {
+    return !(x1 == x2);
+}
+
 using namespace apr;
 using GenAlg = GeneticAlgorithm;
 using PresP = GeneticAlgorithm::AbstractPresentation::Ptr;
@@ -67,10 +81,11 @@ using FloatPres = GeneticAlgorithm::FloatingPointPresentation;
 using FloatUnit = GeneticAlgorithm::FloatingPointUnit;
 
 int main(int argc, char** argv) {
-    std::srand(0x42069);
+    std::srand(std::time(nullptr));
     
     START_BLOCK("TASK 1") {
         
+
     } END_BLOCK()
 
     return 0;
