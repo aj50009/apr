@@ -3,3 +3,6 @@
 
 # Ignore CMake default build directory
 build/
+
+# Ignore Octave files in environment directory
+env/*.m

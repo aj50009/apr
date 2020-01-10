@@ -1,0 +1,34 @@
+close all;
+clc;
+
+figure;
+hold on;
+xlabel('t');
+ylabel('x1');
+plot(xt_1(1:end,3),xt_1(1:end,1),'LineWidth',2);
+plot(xt_2(1:end,3),xt_2(1:end,1),'LineWidth',2);
+plot(xt_3(1:end,3),xt_3(1:end,1),'LineWidth',2);
+plot(xt_4(1:end,3),xt_4(1:end,1),'LineWidth',2);
+plot(xt_5(1:end,3),xt_5(1:end,1),'LineWidth',2);
+plot(xt_6(1:end,3),xt_6(1:end,1),'LineWidth',2);
+plot(xt_7(1:end,3),xt_7(1:end,1),'LineWidth',2);
+plot(xt_8(1:end,3),xt_8(1:end,1),'LineWidth',2);
+plot(xt_9(1:end,3),xt_9(1:end,1),'LineWidth',2);
+plot(xt_10(1:end,3),xt_10(1:end,1),'LineWidth',2);
+legend({'T = 0.001','T = 0.002','T = 0.003','T = 0.004','T = 0.005','T = 0.006','T = 0.007','T = 0.008','T = 0.009','T = 0.01'});
+
+figure;
+hold on;
+xlabel('t');
+ylabel('x2');
+plot(xt_1(1:end,3),xt_1(1:end,2),'LineWidth',2);
+plot(xt_2(1:end,3),xt_2(1:end,2),'LineWidth',2);
+plot(xt_3(1:end,3),xt_3(1:end,2),'LineWidth',2);
+plot(xt_4(1:end,3),xt_4(1:end,2),'LineWidth',2);
+plot(xt_5(1:end,3),xt_5(1:end,2),'LineWidth',2);
+plot(xt_6(1:end,3),xt_6(1:end,2),'LineWidth',2);
+plot(xt_7(1:end,3),xt_7(1:end,2),'LineWidth',2);
+plot(xt_8(1:end,3),xt_8(1:end,2),'LineWidth',2);
+plot(xt_9(1:end,3),xt_9(1:end,2),'LineWidth',2);
+plot(xt_10(1:end,3),xt_10(1:end,2),'LineWidth',2);
+legend({'T = 0.001','T = 0.002','T = 0.003','T = 0.004','T = 0.005','T = 0.006','T = 0.007','T = 0.008','T = 0.009','T = 0.01'});

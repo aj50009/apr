@@ -1,0 +1,40 @@
+close all;
+clc;
+
+t_anal = transpose(linspace(0,10,1001));
+x1_anal = cos(t_anal) + sin(t_anal);
+x2_anal = cos(t_anal) - sin(t_anal);
+
+figure;
+hold on;
+xlabel('t');
+ylabel('x1');
+plot(t_anal,x1_anal,'LineWidth',2);
+plot(t_anal,xt_rk4(1:end,1),'LineWidth',2);
+plot(t_anal,xt_trap(1:end,1),'LineWidth',2);
+plot(t_anal,xt_euler(1:end,1),'LineWidth',2);
+plot(t_anal,xt_inveuler(1:end,1),'LineWidth',2);
+plot(t_anal,xt_pece2(1:end,1),'LineWidth',2);
+plot(t_anal,xt_pece(1:end,1),'LineWidth',2);
+legend({'Analytical','Runge-Kutta (RK4)','Trapezoidal rule','Euler','Backward Euler','Predictor–corrector (PE(CE)^2)','Predictor–corrector (PECE)'});
+
+figure;
+hold on;
+xlabel('t');
+ylabel('x2');
+plot(t_anal,x2_anal,'LineWidth',2);
+plot(t_anal,xt_rk4(1:end,2),'LineWidth',2);
+plot(t_anal,xt_trap(1:end,2),'LineWidth',2);
+plot(t_anal,xt_euler(1:end,2),'LineWidth',2);
+plot(t_anal,xt_inveuler(1:end,2),'LineWidth',2);
+plot(t_anal,xt_pece2(1:end,2),'LineWidth',2);
+plot(t_anal,xt_pece(1:end,2),'LineWidth',2);
+legend({'Analytical','Runge-Kutta (RK4)','Trapezoidal rule','Euler','Backward Euler','Predictor–corrector (PE(CE)^2)','Predictor–corrector (PECE)'});
+
+disp('Cumulative errors:');
+printf('Runge-Kutta (RK4): [ %f %f ]\n', sum(abs(x1_anal - xt_rk4(1:end,1))), sum(abs(x2_anal - xt_rk4(1:end,2))));
+printf('Trapezoidal rule: [ %f %f ]\n', sum(abs(x1_anal - xt_trap(1:end,1))), sum(abs(x2_anal - xt_trap(1:end,2))));
+printf('Euler: [ %f %f ]\n', sum(abs(x1_anal - xt_euler(1:end,1))), sum(abs(x2_anal - xt_euler(1:end,2))));
+printf('Backward Euler: [ %f %f ]\n', sum(abs(x1_anal - xt_inveuler(1:end,1))), sum(abs(x2_anal - xt_inveuler(1:end,2))));
+printf('Predictor–corrector (PE(CE)2): [ %f %f ]\n', sum(abs(x1_anal - xt_pece2(1:end,1))), sum(abs(x2_anal - xt_pece2(1:end,2))));
+printf('Predictor–corrector (PECE): [ %f %f ]\n', sum(abs(x1_anal - xt_pece(1:end,1))), sum(abs(x2_anal - xt_pece(1:end,2))));

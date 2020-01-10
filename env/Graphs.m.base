@@ -1,0 +1,26 @@
+close all;
+clc;
+
+figure;
+hold on;
+xlabel('t');
+ylabel('x1');
+plot(xt_rk4(1:end,3),xt_rk4(1:end,1),'LineWidth',2);
+plot(xt_trap(1:end,3),xt_trap(1:end,1),'LineWidth',2);
+plot(xt_euler(1:end,3),xt_euler(1:end,1),'LineWidth',2);
+plot(xt_inveuler(1:end,3),xt_inveuler(1:end,1),'LineWidth',2);
+plot(xt_pece2(1:end,3),xt_pece2(1:end,1),'LineWidth',2);
+plot(xt_pece(1:end,3),xt_pece(1:end,1),'LineWidth',2);
+legend({'Runge-Kutta (RK4)','Trapezoidal rule','Euler','Backward Euler','Predictor–corrector (PE(CE)^2)','Predictor–corrector (PECE)'});
+
+figure;
+hold on;
+xlabel('t');
+ylabel('x2');
+plot(xt_rk4(1:end,3),xt_rk4(1:end,2),'LineWidth',2);
+plot(xt_trap(1:end,3),xt_trap(1:end,2),'LineWidth',2);
+plot(xt_euler(1:end,3),xt_euler(1:end,2),'LineWidth',2);
+plot(xt_inveuler(1:end,3),xt_inveuler(1:end,2),'LineWidth',2);
+plot(xt_pece2(1:end,3),xt_pece2(1:end,2),'LineWidth',2);
+plot(xt_pece(1:end,3),xt_pece(1:end,2),'LineWidth',2);
+legend({'Runge-Kutta (RK4)','Trapezoidal rule','Euler','Backward Euler','Predictor–corrector (PE(CE)^2)','Predictor–corrector (PECE)'});
